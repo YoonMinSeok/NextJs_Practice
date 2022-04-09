@@ -1,46 +1,51 @@
+import { MongoClient } from "mongodb";
 import MeetupDetail from "../../components/meetups/MeetupDetail";
 
-function MeetupDetails() {
+function MeetupDetails(props) {
   return (
     <MeetupDetail
-      image="https://commons.wikimedia.org/wiki/File:Another_picture_of_band_members.jpg#/media/File:Another_picture_of_band_members.jpg"
-      title="A First Meetup"
-      address="Some Street 5, Some City"
-      description="The meetup description"
+      image={props.meetupData.image}
+      title={props.meetupData.imatitlege}
+      address={props.meetupData.address}
+      description={props.meetupData.description}
     />
   );
 }
 
 export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://ykmvm147:alstjr126@cluster0.7huik.mongodb.net/meetups?retryWrites=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+  const meetups = await meetupsCollection.find({}, { _id: 1 });
   return {
     fallback: false,
-    paths: [
-      {
-        params: {
-          meetupId: "m1",
-        },
-      },
-      {
-        params: {
-          meetupId: "m2",
-        },
-      },
-    ],
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
   };
 }
 
 export async function getStaticProps(context) {
-  const meetupIds = context.params.meetupId;
+  const client = await MongoClient.connect(
+    "mongodb+srv://ykmvm147:alstjr126@cluster0.7huik.mongodb.net/meetups?retryWrites=true&w=majority"
+  );
+  const db = client.db();
 
-  console.log(meetupIds);
+  const meetupsCollection = db.collection("meetups");
+  const selectedMeetup = await meetupsCollection.findOne({ _id: meetupId });
+  client.close();
   return {
     props: {
-      image:
-        "https://commons.wikimedia.org/wiki/File:Another_picture_of_band_members.jpg#/media/File:Another_picture_of_band_members.jpg",
-      id: meetupIds,
-      title: "A First Meetup",
-      address: "Some Street 5, Some City",
-      description: "The meetup description",
+      meetupData: {
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.title,
+        address: selectedMeetup.address,
+        image: selectedMeetup.image,
+        description: selectedMeetup.description,
+      },
     },
   };
 }
